@@ -56,7 +56,7 @@ class TrainingRun:
             args=args,
             train_dataset=train_ds,
             eval_dataset=val_ds,
-            tokenizer=self.tokenizer,
+            processing_class=self.tokenizer,
             compute_metrics=MetricComputer.compute,
         )
 
