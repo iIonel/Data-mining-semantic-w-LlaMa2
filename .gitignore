@@ -1,0 +1,10 @@
+results/
+datasets/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+wandb/
+*.pt
+*.bin
+*.safetensors
+.env
