@@ -1,0 +1,87 @@
+project:
+  name: "Semantic Text Classification with LLaMA 2 7B (Kaggle T4)"
+  task: "text_classification"
+  seed: 42
+  num_runs: 3
+  seeds: [42, 123, 456]
+  device: "auto"
+
+model:
+  name: "meta-llama/Llama-2-7b-hf"
+  max_length: 256
+  smoke_name: "distilbert-base-uncased"
+
+qlora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+  bias: "none"
+  task_type: "SEQ_CLS"
+  modules_to_save: ["score"]
+  bits: 4
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_compute_dtype: "float16"
+
+training:
+  batch_size: 4
+  eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-4
+  num_epochs: 3
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  logging_steps: 50
+  eval_steps: 200
+  save_strategy: "no"
+  optim: "paged_adamw_32bit"
+  report_to: "none"
+  gradient_checkpointing: true
+
+data:
+  ag_news:
+    hf_id: "fancyzhx/ag_news"
+    text_columns: ["text"]
+    label_column: "label"
+    num_classes: 4
+    class_names: ["World", "Sports", "Business", "Sci/Tech"]
+    max_samples_train: 8000
+    max_samples_test: 2000
+
+  dbpedia_14:
+    hf_id: "fancyzhx/dbpedia_14"
+    text_columns: ["title", "content"]
+    label_column: "label"
+    num_classes: 14
+    class_names: ["Company", "EducationalInstitution", "Artist", "Athlete",
+                  "OfficeHolder", "MeanOfTransportation", "Building", "NaturalPlace",
+                  "Village", "Animal", "Plant", "Album", "Film", "WrittenWork"]
+    max_samples_train: 8000
+    max_samples_test: 2000
+
+cv:
+  n_splits: 3
+  stratified: true
+  val_ratio: 0.1
+
+hyperparameter_search:
+  learning_rates: [1.0e-4, 2.0e-4, 5.0e-4]
+  lora_ranks: [8, 16]
+  batch_sizes: [4]
+  epochs: [3]
+
+ablation:
+  configs:
+    - name: "q_v_only"
+      target_modules: ["q_proj", "v_proj"]
+    - name: "all_attention"
+      target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+    - name: "with_mlp"
+      target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+scalability:
+  batch_sizes: [1, 2, 4, 8]
+  dataset_fractions: [0.25, 0.5, 1.0]

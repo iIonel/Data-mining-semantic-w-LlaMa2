@@ -98,6 +98,9 @@ class TrainingRun:
             report_to=tcfg["report_to"],
             remove_unused_columns=False,
             seed=self.config["project"]["seed"],
+            gradient_checkpointing=tcfg.get("gradient_checkpointing", False)
+            and torch.cuda.is_available(),
+            dataloader_pin_memory=False,
         )
 
 

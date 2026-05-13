@@ -48,13 +48,23 @@ class ModelBuilder:
 
     def _load_base(self):
         if self.use_quant:
-            model = AutoModelForSequenceClassification.from_pretrained(
-                self.name,
+            kwargs = dict(
                 num_labels=self.num_labels,
                 quantization_config=QuantizationConfig.nf4(self.config["qlora"]),
                 device_map="auto",
             )
-            return prepare_model_for_kbit_training(model)
+            max_mem_gb = self.config.get("training", {}).get("max_memory_gb")
+            if max_mem_gb:
+                kwargs["max_memory"] = {0: f"{max_mem_gb}GiB", "cpu": "16GiB"}
+            model = AutoModelForSequenceClassification.from_pretrained(self.name, **kwargs)
+            use_gc = self.config.get("training", {}).get("gradient_checkpointing", False)
+            model = prepare_model_for_kbit_training(
+                model, use_gradient_checkpointing=use_gc,
+            )
+            if use_gc:
+                model.gradient_checkpointing_enable()
+                model.enable_input_require_grads()
+            return model
         return AutoModelForSequenceClassification.from_pretrained(
             self.name, num_labels=self.num_labels,
         )

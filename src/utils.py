@@ -34,12 +34,21 @@ class Env:
         return self
 
     def hf_login(self):
-        token = os.environ.get("HF_TOKEN", "").strip()
+        token = os.environ.get("HF_TOKEN", "").strip() or self._kaggle_secret("HF_TOKEN")
         if not token:
             return False
+        os.environ["HF_TOKEN"] = token
         from huggingface_hub import login
         login(token=token, add_to_git_credential=False)
         return True
+
+    @staticmethod
+    def _kaggle_secret(name):
+        try:
+            from kaggle_secrets import UserSecretsClient
+            return UserSecretsClient().get_secret(name).strip()
+        except Exception:
+            return ""
 
 
 class Reproducibility:
